@@ -9,7 +9,7 @@ from time import strftime, gmtime, time
 import pickle
 import json
 
-import thread
+import _thread
 from scipy.stats import rankdata
 
 random.seed(42)
@@ -127,7 +127,7 @@ class Evaluator:
             #     bad_answers = self.pada(random.sample(self.answers.values(), len(good_answers)))
             # else:
             #     bad_answers = self.pada(get_bad_samples(indices, top_50))
-            bad_answers = self.pada(random.sample(self.answers.values(), len(good_answers)))
+            bad_answers = self.pada(random.sample(list(self.answers.values()), len(good_answers)))
 
             print('Fitting epoch %d' % i, file=sys.stderr)
             hist = self.model.fit([questions, good_answers, bad_answers], nb_epoch=1, batch_size=batch_size,
@@ -273,3 +273,4 @@ if __name__ == '__main__':
     log('   - %.3f on test 1' % mrr[0])
     log('   - %.3f on test 2' % mrr[1])
     log('   - %.3f on dev' % mrr[2])
+
