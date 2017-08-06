@@ -21,3 +21,14 @@ def get_triples():
 
     return ret
 
+def get_all_words(triples):
+    all_words = []
+    for i in triples:
+        all_words.append(i[0])
+        all_words.append(i[1])
+        all_words.append(i[2])
+
+    deduplicated_words = set(all_words)
+    return list(deduplicated_words)
+
+
