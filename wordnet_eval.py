@@ -100,7 +100,7 @@ def generate_word_embeddings():
     np.save('word2vec_wordnet.embeddings', embeddings)
 
     # This will produce {0: 'word1', 1: 'word2', ...}
-    all_words = {i: j for (i, j) in enumerate(all_words)}
+    all_words = {i+1: j for (i, j) in enumerate(all_words)}
     pickle.dump(all_words, open('word2vec_wordnet.vocabulary', 'wb'))
 
 if __name__ == '__main__':
