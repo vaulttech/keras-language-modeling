@@ -78,15 +78,17 @@ import pickle
 
 glove_vec_size = 300
 nlp = None
+
 def initialize_word_embeddings(words):
+    global nlp
     if nlp is None:
         nlp = spacy.load('en')
 
     embeddings = np.zeros([len(words), glove_vec_size])
-    for i in words:
-        doc = nlp(i)
+    for idx, w in enumerate(words):
+        doc = nlp(w)
         word_vec = doc.vector
-        embeddings[i] = word_vec
+        embeddings[idx] = word_vec
 
     return embeddings
 
@@ -99,7 +101,7 @@ def generate_word_embeddings():
 
     # This will produce {0: 'word1', 1: 'word2', ...}
     all_words = {i: j for (i, j) in enumerate(all_words)}
-    pickle.dump(all_words, 'word2vec_wordnet.vocabulary')
+    pickle.dump(all_words, open('word2vec_wordnet.vocabulary', 'wb'))
 
 if __name__ == '__main__':
     generate_word_embeddings()
