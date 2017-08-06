@@ -1,5 +1,6 @@
 from nltk.corpus import wordnet as wn
 
+
 def get_triples():
     ret = []
     for l in wn.all_lemma_names():
@@ -71,16 +72,35 @@ def get_antonyms(remove_duplicates=False):
 
     return antonyms, lemmas_with_antonyms, lemma_antonym_pairs
 
-#import spacy
-#import numpy as np
-#nlp = None
-# def initialize_word_embeddings(words):
-#     if nlp is None:
-#         nlp = spacy.load('en')
-#
-#     embeddings = np.zeros([len(words), vec_size])
-#     for i in words:
-#
-#         embeddings[i] = word_vec
-#
-#     return embeddings
+import spacy
+import numpy as np
+import pickle
+
+glove_vec_size = 300
+nlp = None
+def initialize_word_embeddings(words):
+    if nlp is None:
+        nlp = spacy.load('en')
+
+    embeddings = np.zeros([len(words), glove_vec_size])
+    for i in words:
+        doc = nlp(i)
+        word_vec = doc.vector
+        embeddings[i] = word_vec
+
+    return embeddings
+
+def generate_word_embeddings():
+    triples = get_triples()
+    all_words = get_all_words(triples)
+
+    embeddings = initialize_word_embeddings(all_words)
+    np.save('word2vec_wordnet.embeddings', embeddings)
+
+    # This will produce {0: 'word1', 1: 'word2', ...}
+    all_words = {i: j for (i, j) in enumerate(all_words)}
+    pickle.dump(all_words, 'word2vec_wordnet.vocabulary')
+
+if __name__ == '__main__':
+    generate_word_embeddings()
+
