@@ -104,6 +104,8 @@ def generate_dataset():
     all_words = {i+1: j for (i, j) in enumerate(all_words)}
     pickle.dump(all_words, open('word2vec_wordnet.vocabulary', 'wb'))
 
+
+
 if __name__ == '__main__':
     generate_dataset()
 

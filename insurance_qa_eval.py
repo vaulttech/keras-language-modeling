@@ -260,8 +260,8 @@ if __name__ == '__main__':
         }
     }
 
-    from keras_models import EmbeddingModel
-    evaluator = Evaluator(conf, model=EmbeddingModel, optimizer='adam')
+    from keras_models import MLPModel
+    evaluator = Evaluator(conf, model=MLPModel, optimizer='adam')
 
     # train the model
     best_loss = evaluator.train()
