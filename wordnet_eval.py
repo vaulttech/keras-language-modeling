@@ -92,17 +92,18 @@ def initialize_word_embeddings(words):
 
     return embeddings
 
-def generate_word_embeddings():
+def generate_dataset():
     triples = get_triples()
-    all_words = get_all_words(triples)
+    train, test = triples[:-500], triples[-500:]
 
+    all_words = get_all_words(train)
     embeddings = initialize_word_embeddings(all_words)
     np.save('word2vec_wordnet.embeddings', embeddings)
 
-    # This will produce {0: 'word1', 1: 'word2', ...}
+    # This will produce {1: 'word1', 2: 'word2', ...}
     all_words = {i+1: j for (i, j) in enumerate(all_words)}
     pickle.dump(all_words, open('word2vec_wordnet.vocabulary', 'wb'))
 
 if __name__ == '__main__':
-    generate_word_embeddings()
+    generate_dataset()
 

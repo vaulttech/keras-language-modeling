@@ -21,28 +21,29 @@ def log(x):
 
 class Evaluator:
     def __init__(self, conf, model, optimizer=None):
-        try:
-            data_path = os.environ['INSURANCE_QA']
-        except KeyError:
-            print("INSURANCE_QA is not set. Set it to your clone of https://github.com/codekansas/insurance_qa_python")
-            sys.exit(1)
+        # try:
+        #     data_path = os.environ['INSURANCE_QA']
+        # except KeyError:
+        #     print("INSURANCE_QA is not set. Set it to your clone of https://github.com/codekansas/insurance_qa_python")
+        #     sys.exit(1)
+
         if isinstance(conf, str):
             conf = json.load(open(conf, 'rb'))
         self.model = model(conf)
-        self.path = data_path
         self.conf = conf
         self.params = conf['training']
         optimizer = self.params['optimizer'] if optimizer is None else optimizer
         self.model.compile(optimizer)
-        self.answers = self.load('answers') # self.load('generated')
         self._vocab = None
         self._reverse_vocab = None
         self._eval_sets = None
+        self.path = conf['data_path']
+        #self.answers = self.load('answers') # self.load('generated')
 
     ##### Resources #####
 
     def load(self, name):
-        return pickle.load(open(os.path.join(self.path, name), 'rb'))
+        return pickle.load(open(os.path.join(self.path, self.conf[name]), 'rb'))
 
     def vocab(self):
         if self._vocab is None:
@@ -235,11 +236,14 @@ if __name__ == '__main__':
     import numpy as np
 
     conf = {
-        'n_words': 22353,
-        'question_len': 20,
-        'answer_len': 150,
+        #'data_path': './insurance_qa_python'
+        #'n_words': 22353,
+	'n_word': 7795,
+        'question_len': 1,
+        'answer_len': 1,
         'margin': 0.05,
-        'initial_embed_weights': 'word2vec_100_dim.embeddings',
+        'initial_embed_weights': 'word2vec_wordnet.embeddings.npy',
+        'vocabulary': 'word2vec_wordnet.vocabulary',
 
         'training': {
             'batch_size': 100,
