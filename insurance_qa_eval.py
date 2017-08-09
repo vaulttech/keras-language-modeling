@@ -27,17 +27,17 @@ class Evaluator:
         #     print("INSURANCE_QA is not set. Set it to your clone of https://github.com/codekansas/insurance_qa_python")
         #     sys.exit(1)
 
-        if isinstance(conf, str):
-            conf = json.load(open(conf, 'rb'))
+        #if isinstance(conf, str):
+        #    conf = json.load(open(conf, 'rb'))
         self.model = model(conf)
         self.conf = conf
         self.params = conf['training']
         optimizer = self.params['optimizer'] if optimizer is None else optimizer
         self.model.compile(optimizer)
-        self._vocab = None
-        self._reverse_vocab = None
-        self._eval_sets = None
-        self.path = conf['data_path']
+        #self._vocab = None
+        #self._reverse_vocab = None
+        #self._eval_sets = None
+        #self.path = conf['data_path']
         #self.answers = self.load('answers') # self.load('generated')
 
     ##### Resources #####
@@ -45,16 +45,16 @@ class Evaluator:
     def load(self, name):
         return pickle.load(open(os.path.join(self.path, self.conf[name]), 'rb'))
 
-    def vocab(self):
-        if self._vocab is None:
-            self._vocab = self.load('vocabulary')
-        return self._vocab
+    #def vocab(self):
+    #    if self._vocab is None:
+    #        self._vocab = self.load('vocabulary')
+    #    return self._vocab
 
-    def reverse_vocab(self):
-        if self._reverse_vocab is None:
-            vocab = self.vocab()
-            self._reverse_vocab = dict((v.lower(), k) for k, v in vocab.items())
-        return self._reverse_vocab
+    #def reverse_vocab(self):
+    #    if self._reverse_vocab is None:
+    #        vocab = self.vocab()
+    #        self._reverse_vocab = dict((v.lower(), k) for k, v in vocab.items())
+    #    return self._reverse_vocab
 
     ##### Loading / saving #####
 
@@ -69,27 +69,27 @@ class Evaluator:
 
     ##### Converting / reverting #####
 
-    def convert(self, words):
-        rvocab = self.reverse_vocab()
-        if type(words) == str:
-            words = words.strip().lower().split(' ')
-        return [rvocab.get(w, 0) for w in words]
+    #def convert(self, words):
+    #    rvocab = self.reverse_vocab()
+    #    if type(words) == str:
+    #        words = words.strip().lower().split(' ')
+    #    return [rvocab.get(w, 0) for w in words]
 
-    def revert(self, indices):
-        vocab = self.vocab()
-        return [vocab.get(i, 'X') for i in indices]
+    #def revert(self, indices):
+    #    vocab = self.vocab()
+    #    return [vocab.get(i, 'X') for i in indices]
 
     ##### Padding #####
 
-    def padq(self, data):
-        return self.pad(data, self.conf.get('question_len', None))
+    #def padq(self, data):
+    #    return self.pad(data, self.conf.get('question_len', None))
 
-    def pada(self, data):
-        return self.pad(data, self.conf.get('answer_len', None))
+    #def pada(self, data):
+    #    return self.pad(data, self.conf.get('answer_len', None))
 
-    def pad(self, data, len=None):
-        from keras.preprocessing.sequence import pad_sequences
-        return pad_sequences(data, maxlen=len, padding='post', truncating='post', value=0)
+    #def pad(self, data, len=None):
+    #    from keras.preprocessing.sequence import pad_sequences
+    #    return pad_sequences(data, maxlen=len, padding='post', truncating='post', value=0)
 
     ##### Training #####
 
@@ -238,12 +238,12 @@ if __name__ == '__main__':
     conf = {
         #'data_path': './insurance_qa_python'
         #'n_words': 22353,
-	'n_word': 7795,
-        'question_len': 1,
-        'answer_len': 1,
+	#'n_word': 7795,
+        #'question_len': 1,
+        #'answer_len': 1,
         'margin': 0.05,
-        'initial_embed_weights': 'word2vec_wordnet.embeddings.npy',
-        'vocabulary': 'word2vec_wordnet.vocabulary',
+        #'initial_embed_weights': 'word2vec_wordnet.embeddings.npy',
+        #'vocabulary': 'word2vec_wordnet.vocabulary',
 
         'training': {
             'batch_size': 100,
