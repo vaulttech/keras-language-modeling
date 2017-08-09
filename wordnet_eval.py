@@ -28,6 +28,7 @@ def get_random_word(nlp):
 
 def get_triples(nlp, force_antonyms, remove_duplicates):
     ret = []
+    duplicates = set()
     for s in wn.all_synsets():
         lemmas = s.lemmas()
         if len(lemmas) == 1:
@@ -58,10 +59,13 @@ def get_triples(nlp, force_antonyms, remove_duplicates):
                 for j in range(i+1, len(lemmas)):
                     antonym = get_random_word(nlp)
                     triple = (lemmas[i].name(), lemmas[j].name(), antonym.text)
-                    ret.append(triple)
-
-    if (remove_duplicates):
-        pass
+                    if (remove_duplicates):
+                        pair = (triple[0], triple[1])
+                        if pair not in duplicates:
+                            ret.append(triple)
+                            duplicates.add(pair)
+                    else:
+                        ret.append(triple)
 
     return ret
 
@@ -192,5 +196,5 @@ def generate_dataset(force_antonyms=False, remove_duplicates=False):
     #pickle.dump(all_words, open('word2vec_wordnet.vocabulary', 'wb'))
 
 if __name__ == '__main__':
-    generate_dataset()
+    generate_dataset(remove_duplicates=True)
 
