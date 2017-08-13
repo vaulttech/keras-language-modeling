@@ -60,10 +60,12 @@ def get_triples(nlp, force_antonyms, remove_duplicates):
                     antonym = get_random_word(nlp)
                     triple = (lemmas[i].name(), lemmas[j].name(), antonym.text)
                     if (remove_duplicates):
-                        pair = frozenset((triple[0], triple[1]))
-                        if pair not in duplicates:
+                        pair1 = frozenset((triple[0], triple[1]))
+                        pair2 = frozenset((triple[1], triple[0]))
+                        if pair1 not in duplicates and pair2 not in duplicates:
                             ret.append(triple)
-                            duplicates.add(pair)
+                            duplicates.add(pair1)
+                            duplicates.add(pair2)
                     else:
                         ret.append(triple)
 
@@ -196,5 +198,5 @@ def generate_dataset(force_antonyms=False, remove_duplicates=False):
     #pickle.dump(all_words, open('word2vec_wordnet.vocabulary', 'wb'))
 
 if __name__ == '__main__':
-    generate_dataset(remove_duplicates=True)
+    generate_dataset(force_antonyms=True)
 
