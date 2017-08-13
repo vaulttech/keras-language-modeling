@@ -34,7 +34,7 @@ class LanguageModel:
 
     def get_answer(self):
         if self._answer is None:
-            self._answer = Input(shape=(self.config['answer_len'],), dtype='int32', name='answer')
+            self._answer = Input(shape=(self.config['answer_len'],), dtype='float32', name='answer')
         return self._answer
 
     @abstractmethod
@@ -149,23 +149,22 @@ class MLPModel(LanguageModel):
 
         # add embedding layers
         #weights = np.load(self.config['initial_embed_weights'])
-        embedding = Dense(self.config['n_words'],
-                              output_dim=weights.shape[1],
-                              mask_zero=True,
-                              # dropout=0.2,
-                              #weights=[weights]
+        fclayer = Dense(units=300,
+                            activation='relu',
+                            # dropout=0.2,
+                            #weights=[weights]
                           )
 
-        question_embedding = embedding(question)
-        answer_embedding = embedding(answer)
+        question_embedding = fclayer(question)
+        answer_embedding = fclayer(answer)
 
         # maxpooling
-        maxpool = Lambda(lambda x: K.max(x, axis=1, keepdims=False), output_shape=lambda x: (x[0], x[2]))
-        maxpool.supports_masking = True
-        question_pool = maxpool(question_embedding)
-        answer_pool = maxpool(answer_embedding)
+        #maxpool = Lambda(lambda x: K.max(x, axis=1, keepdims=False), output_shape=lambda x: (x[0], x[2]))
+        #maxpool.supports_masking = True
+        #question_pool = maxpool(question_embedding)
+        #answer_pool = maxpool(answer_embedding)
 
-        return question_pool, answer_pool
+        return question_embedding, answer_embedding
 
 
 

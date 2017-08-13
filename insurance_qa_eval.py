@@ -14,6 +14,7 @@ import _thread
 from scipy.stats import rankdata
 
 import numpy as np
+import spacy
 
 random.seed(42)
 
@@ -42,6 +43,7 @@ class Evaluator:
         #self._eval_sets = None
         #self.path = conf['data_path']
         #self.answers = self.load('answers') # self.load('generated')
+        self.nlp = spacy.load('en')
 
     ##### Resources #####
 
@@ -71,12 +73,13 @@ class Evaluator:
         self.model.load_weights('models/weights_epoch_%d.h5' % epoch)
 
     def load_dataset(self, which_dataset='train'):
-        file_name = os.path.join('data', self.conf['dataset_name'], which_dataset)
-        triples = pickle.load(open(file_name, 'rb'))
+        file_name = 'word_synonym_antonym.' + which_dataset
+        file_path = os.path.join('data', self.conf['dataset_name'], file_name)
+        triples = pickle.load(open(file_path, 'rb'))
 
-        words    = [i[0] for i in triples]
-        synonyms = [i[1] for i in triples]
-        antonyms = [i[2] for i in triples]
+        words    = np.array([self.nlp.vocab[i[0]].vector for i in triples])
+        synonyms = np.array([self.nlp.vocab[i[1]].vector for i in triples])
+        antonyms = np.array([self.nlp.vocab[i[2]].vector for i in triples])
 
         return words, synonyms, antonyms
 
@@ -277,7 +280,8 @@ if __name__ == '__main__':
 
         'training': {
             'batch_size': 100,
-            'nb_epoch': 2000,
+            #'nb_epoch': 2000,
+            'nb_epoch': 100,
             'validation_split': 0.1,
         },
 
