@@ -12,9 +12,13 @@ import numpy as np
 
 class LanguageModel:
     def __init__(self, config):
-        self.question = Input(shape=(config['question_len'],), dtype='int32', name='question_base')
-        self.answer_good = Input(shape=(config['answer_len'],), dtype='int32', name='answer_good_base')
-        self.answer_bad = Input(shape=(config['answer_len'],), dtype='int32', name='answer_bad_base')
+        #self.question = Input(shape=(config['question_len'],), dtype='int32', name='question_base')
+        #self.answer_good = Input(shape=(config['answer_len'],), dtype='int32', name='answer_good_base')
+        #self.answer_bad = Input(shape=(config['answer_len'],), dtype='int32', name='answer_bad_base')
+
+        self.question = Input(shape=(config['question_len'],), dtype='float32', name='question_base')
+        self.answer_good = Input(shape=(config['answer_len'],), dtype='float32', name='answer_good_base')
+        self.answer_bad = Input(shape=(config['answer_len'],), dtype='float32', name='answer_bad_base')
 
         self.config = config
         self.params = config.get('similarity', dict())

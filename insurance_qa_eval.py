@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import os
+import argparse
 
 import sys
 import random
@@ -11,6 +12,8 @@ import json
 
 import _thread
 from scipy.stats import rankdata
+
+import numpy as np
 
 random.seed(42)
 
@@ -42,8 +45,8 @@ class Evaluator:
 
     ##### Resources #####
 
-    def load(self, name):
-        return pickle.load(open(os.path.join(self.path, self.conf[name]), 'rb'))
+    #def load(self, name):
+    #    return pickle.load(open(os.path.join(self.path, self.conf[name]), 'rb'))
 
     #def vocab(self):
     #    if self._vocab is None:
@@ -66,6 +69,16 @@ class Evaluator:
     def load_epoch(self, epoch):
         assert os.path.exists('models/weights_epoch_%d.h5' % epoch), 'Weights at epoch %d not found' % epoch
         self.model.load_weights('models/weights_epoch_%d.h5' % epoch)
+
+    def load_dataset(self, which_dataset='train'):
+        file_name = os.path.join('data', self.conf['dataset_name'], which_dataset)
+        triples = pickle.load(open(file_name, 'rb'))
+
+        words    = [i[0] for i in triples]
+        synonyms = [i[1] for i in triples]
+        antonyms = [i[2] for i in triples]
+
+        return words, synonyms, antonyms
 
     ##### Converting / reverting #####
 
@@ -96,26 +109,31 @@ class Evaluator:
     def get_time(self):
         return strftime('%Y-%m-%d %H:%M:%S', gmtime())
 
+    @property
     def train(self):
         batch_size = self.params['batch_size']
         nb_epoch = self.params['nb_epoch']
         validation_split = self.params['validation_split']
 
-        training_set = self.load('train')
+        #training_set = self.load('train')
         # top_50 = self.load('top_50')
 
-        questions = list()
-        good_answers = list()
-        indices = list()
+        #questions = list()
+        #good_answers = list()
+        #indices = list()
 
-        for j, q in enumerate(training_set):
-            questions += [q['question']] * len(q['answers'])
-            good_answers += [self.answers[i] for i in q['answers']]
-            indices += [j] * len(q['answers'])
-        log('Began training at %s on %d samples' % (self.get_time(), len(questions)))
+        #for j, q in enumerate(training_set):
+        #    questions += [q['question']] * len(q['answers'])
+        #    good_answers += [self.answers[i] for i in q['answers']]
+        #    indices += [j] * len(q['answers'])
 
-        questions = self.padq(questions)
-        good_answers = self.pada(good_answers)
+        words, synonyms, antonyms = self.load_dataset()
+        assert len(words) == len(synonyms) == len(antonyms)
+
+        log('Began training at %s on %d samples' % (self.get_time(), len(words)))
+
+        #questions = self.padq(questions)
+        #good_answers = self.pada(good_answers)
 
         val_loss = {'loss': 1., 'epoch': 0}
 
@@ -128,10 +146,10 @@ class Evaluator:
             #     bad_answers = self.pada(random.sample(self.answers.values(), len(good_answers)))
             # else:
             #     bad_answers = self.pada(get_bad_samples(indices, top_50))
-            bad_answers = self.pada(random.sample(list(self.answers.values()), len(good_answers)))
+            #bad_answers = self.pada(random.sample(list(self.answers.values()), len(good_answers)))
 
             print('Fitting epoch %d' % i, file=sys.stderr)
-            hist = self.model.fit([questions, good_answers, bad_answers], nb_epoch=1, batch_size=batch_size,
+            hist = self.model.fit([words, synonyms, antonyms], nb_epoch=1, batch_size=batch_size,
                              validation_split=validation_split, verbose=1)
 
             if hist.history['val_loss'][0] < val_loss['loss']:
@@ -211,36 +229,48 @@ class Evaluator:
             mrr_ls.append(mrr)
         return top1_ls, mrr_ls
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', default="MLPModel", type=str,
+                        help='The name of the model to be trained.')
+    parser.add_argument('--dataset_name', default="wordnet_true_antonyms",
+                        type=str,
+                        help='The name of the dataset to be used.')
+    return parser.parse_args()
+
 
 if __name__ == '__main__':
-    if len(sys.argv) >= 2 and sys.argv[1] == 'serve':
-        from flask import Flask
-        app = Flask(__name__)
-        port = 5000
-        lines = list()
-        def log(x):
-            lines.append(x)
+    args = parse_args()
+    # if len(sys.argv) >= 2 and sys.argv[1] == 'serve':
+    #     from flask import Flask
+    #     app = Flask(__name__)
+    #     port = 5000
+    #     lines = list()
+    #     def log(x):
+    #         lines.append(x)
+    #
+    #     @app.route('/')
+    #     def home():
+    #         return ('<html><body><h1>Training Log</h1>' +
+    #                 ''.join(['<code>{}</code><br/>'.format(line) for line in lines]) +
+    #                 '</body></html>')
+    #
+    #     def start_server():
+    #         app.run(debug=False, use_evalex=False, port=port)
+    #
+    #     thread.start_new_thread(start_server, tuple())
+    #     print('Serving to port %d' % port, file=sys.stderr)
 
-        @app.route('/')
-        def home():
-            return ('<html><body><h1>Training Log</h1>' +
-                    ''.join(['<code>{}</code><br/>'.format(line) for line in lines]) +
-                    '</body></html>')
-
-        def start_server():
-            app.run(debug=False, use_evalex=False, port=port)
-
-        thread.start_new_thread(start_server, tuple())
-        print('Serving to port %d' % port, file=sys.stderr)
-
-    import numpy as np
 
     conf = {
-        #'data_path': './insurance_qa_python'
+        'dataset_name': args.dataset_name,
         #'n_words': 22353,
 	#'n_word': 7795,
-        #'question_len': 1,
-        #'answer_len': 1,
+
+        # I'm corrupting these variables to mean the size of the word vector
+        'question_len': 300,
+        'answer_len': 300,
+
         'margin': 0.05,
         #'initial_embed_weights': 'word2vec_wordnet.embeddings.npy',
         #'vocabulary': 'word2vec_wordnet.vocabulary',
@@ -264,7 +294,7 @@ if __name__ == '__main__':
     evaluator = Evaluator(conf, model=MLPModel, optimizer='adam')
 
     # train the model
-    best_loss = evaluator.train()
+    best_loss = evaluator.train
 
     # evaluate mrr for a particular epoch
     evaluator.load_epoch(best_loss['epoch'])
