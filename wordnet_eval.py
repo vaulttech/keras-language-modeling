@@ -42,7 +42,7 @@ def get_triples(nlp, force_antonyms, remove_duplicates):
                 # ('good', 'goodness', 'evil')
                 # and
                 # ('goodness', 'good', 'evilness')
-                for j in range(1, len(lemmas)):
+                for j in range(len(lemmas)):
                     if i == j:
                         continue
 
@@ -60,7 +60,7 @@ def get_triples(nlp, force_antonyms, remove_duplicates):
                     antonym = get_random_word(nlp)
                     triple = (lemmas[i].name(), lemmas[j].name(), antonym.text)
                     if (remove_duplicates):
-                        pair = (triple[0], triple[1])
+                        pair = frozenset((triple[0], triple[1]))
                         if pair not in duplicates:
                             ret.append(triple)
                             duplicates.add(pair)
