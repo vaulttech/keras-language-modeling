@@ -270,6 +270,7 @@ if __name__ == '__main__':
 
     conf = {
         'dataset_name': args.dataset_name,
+        'model_name' : args.model_name,
         #'n_words': 22353,
 	#'n_word': 7795,
 
