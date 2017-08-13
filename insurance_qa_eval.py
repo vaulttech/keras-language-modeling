@@ -64,14 +64,14 @@ class Evaluator:
     ##### Loading / saving #####
 
     def save_epoch(self, epoch):
-        model_path = os.path.join('models', self.conf['dataset_name'])
+        model_path = os.path.join('models', self.conf['dataset_name'], self.conf['model_name'])
         if not os.path.exists(model_path):
             os.makedirs(model_path)
         self.model.save_weights(os.path.join(model_path, 'weights_epoch_%d.h5' % epoch), overwrite=True)
 
     def load_epoch(self, epoch):
         model_path = os.path.join('models', self.conf['dataset_name'],
-                                    'weights_epoch_%d.h5' % epoch)
+		        self.conf['model_name'], 'weights_epoch_%d.h5' % epoch)
         assert os.path.exists(model_path), 'Weights at epoch %d not found' % epoch
         self.model.load_weights(model_path)
 
