@@ -237,7 +237,7 @@ class Evaluator:
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', default="MLPModel", type=str,
+    parser.add_argument('--model_name', default="MLPModel", type=str,
                         help='The name of the model to be trained.')
     parser.add_argument('--dataset_name', default="wordnet_true_antonyms",
                         type=str,
