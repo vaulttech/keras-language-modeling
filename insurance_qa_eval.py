@@ -298,8 +298,8 @@ if __name__ == '__main__':
         }
     }
 
-    #from keras_models import MLPModel
-    model = __import__('keras_models.' + args.model_name)
+    import keras_models
+    model = getattr(keras_models, args.model_name)
     evaluator = Evaluator(conf, model=model, optimizer='adam')
 
     # train the model
