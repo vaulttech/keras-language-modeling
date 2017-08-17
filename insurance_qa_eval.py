@@ -221,7 +221,7 @@ class Evaluator:
             curr_synonym = synonyms_vec[i]
             curr_antonym = antonyms_vec[i]
             sim_right = self.model.predict([curr_word, curr_synonym])
-            sim_wrong = self.model.predict([curr_word, antonyms_vec])
+            sim_wrong = self.model.predict([curr_word, curr_antonym])
             results.append((words[i], synonyms[i], antonyms[i], sim_right, sim_wrong))
 
             # I can also create a histogram for all words to see how the
