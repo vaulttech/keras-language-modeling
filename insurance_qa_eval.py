@@ -95,7 +95,9 @@ class Evaluator:
         antonyms_vec = np.array([self.nlp.vocab[i[2]].vector for i in triples])
 
         if load_column_vecs:
-            pass
+            words_vec    = words_vec[:, np.newaxis, :]
+            synonyms_vec = synonyms_vec[:, np.newaxis, :]
+            antonyms_vec = antonyms_vec[:, np.newaxis, :]
 
         words    = np.array([self.nlp.vocab[i[0]].vector for i in triples])
         synonyms = np.array([self.nlp.vocab[i[1]].vector for i in triples])
