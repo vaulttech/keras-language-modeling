@@ -143,14 +143,14 @@ class LanguageModel:
         self.prediction_model.load_weights(file_name, **kwargs)
 
 class MLPModel(LanguageModel):
-    def build(self):
+    def build_with_size(self, size):
         question = self.question
         answer = self.get_answer()
 
         # add embedding layers
         #weights = np.load(self.config['initial_embed_weights'])
-        fclayer = Dense(units=300,
-                            activation='relu',
+        fclayer = Dense(units=size,
+                            #activation='relu',
                             # dropout=0.2,
                             #weights=[weights]
                           )
@@ -166,6 +166,25 @@ class MLPModel(LanguageModel):
 
         return question_embedding, answer_embedding
 
+class MLPModel_100(MLPModel):
+    def build(self):
+        return self.build_with_size(100)
+
+class MLPModel_200(MLPModel):
+    def build(self):
+        return self.build_with_size(200)
+
+class MLPModel_300(MLPModel):
+    def build(self):
+        return self.build_with_size(300)
+
+class MLPModel_400(MLPModel):
+    def build(self):
+        return self.build_with_size(400)
+
+class MLPModel_500(MLPModel):
+    def build(self):
+        return self.build_with_size(500)
 
 
 class EmbeddingModel(LanguageModel):
