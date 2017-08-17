@@ -85,7 +85,7 @@ class Evaluator:
         assert os.path.exists(model_path), 'Weights at epoch %d not found' % epoch
         self.model.load_weights(model_path)
 
-    def load_dataset(self, which_dataset='train'):
+    def load_dataset(self, which_dataset='train', load_column_vecs=False):
         file_name = 'word_synonym_antonym.' + which_dataset
         file_path = os.path.join('data', self.conf['dataset_name'], file_name)
         triples = pickle.load(open(file_path, 'rb'))
@@ -93,6 +93,9 @@ class Evaluator:
         words_vec    = np.array([self.nlp.vocab[i[0]].vector for i in triples])
         synonyms_vec = np.array([self.nlp.vocab[i[1]].vector for i in triples])
         antonyms_vec = np.array([self.nlp.vocab[i[2]].vector for i in triples])
+
+        if load_column_vecs:
+            pass
 
         words    = np.array([self.nlp.vocab[i[0]].vector for i in triples])
         synonyms = np.array([self.nlp.vocab[i[1]].vector for i in triples])
@@ -206,7 +209,7 @@ class Evaluator:
         # elements to the other one. Both of these have assumption that are
         # hard to defend.
         words_vec, synonyms_vec, antonyms_vec, words, synonyms, antonyms = \
-                                        self.load_dataset(which_dataset='test')
+                    self.load_dataset(which_dataset='test', load_column_vecs=True)
         assert len(words) == len(synonyms) == len(antonyms)
 
         results = []
