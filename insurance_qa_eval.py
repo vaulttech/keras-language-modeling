@@ -16,6 +16,8 @@ from scipy.stats import rankdata
 import numpy as np
 import spacy
 
+import bisect
+
 random.seed(42)
 
 
@@ -63,6 +65,14 @@ class Evaluator:
 
     ##### Loading / saving #####
 
+    def save_test_results(self, score_epoch, results):
+        dump_path = os.path.join('models', self.conf['dataset_name'], self.conf['model_name'])
+        if not os.path.exists(dump_path):
+            os.makedirs(dump_path)
+        file_name = os.path.join(dump_path, 'test_results.pickle')
+        test_results = [score_epoch, results]
+        pickle.dump(test_results, file_name, overwrite=True)
+
     def save_epoch(self, epoch):
         model_path = os.path.join('models', self.conf['dataset_name'], self.conf['model_name'])
         if not os.path.exists(model_path):
@@ -80,11 +90,15 @@ class Evaluator:
         file_path = os.path.join('data', self.conf['dataset_name'], file_name)
         triples = pickle.load(open(file_path, 'rb'))
 
+        words_vec    = np.array([self.nlp.vocab[i[0]].vector for i in triples])
+        synonyms_vec = np.array([self.nlp.vocab[i[1]].vector for i in triples])
+        antonyms_vec = np.array([self.nlp.vocab[i[2]].vector for i in triples])
+
         words    = np.array([self.nlp.vocab[i[0]].vector for i in triples])
         synonyms = np.array([self.nlp.vocab[i[1]].vector for i in triples])
         antonyms = np.array([self.nlp.vocab[i[2]].vector for i in triples])
 
-        return words, synonyms, antonyms
+        return words_vec, synonyms_vec, antonyms_vec, words, synonyms, antonyms
 
     ##### Converting / reverting #####
 
@@ -133,10 +147,11 @@ class Evaluator:
         #    good_answers += [self.answers[i] for i in q['answers']]
         #    indices += [j] * len(q['answers'])
 
-        words, synonyms, antonyms = self.load_dataset()
-        assert len(words) == len(synonyms) == len(antonyms)
+        words_vec, synonyms_vec, antonyms_vec, words, synonyms, antonyms = \
+                                                            self.load_dataset()
+        assert len(words_vec) == len(synonyms_vec) == len(antonyms_vec)
 
-        log('Began training at %s on %d samples' % (self.get_time(), len(words)))
+        log('Began training at %s on %d samples' % (self.get_time(), len(words_vec)))
 
         #questions = self.padq(questions)
         #good_answers = self.pada(good_answers)
@@ -155,8 +170,9 @@ class Evaluator:
             #bad_answers = self.pada(random.sample(list(self.answers.values()), len(good_answers)))
 
             print('Fitting epoch %d' % i, file=sys.stderr)
-            hist = self.model.fit([words, synonyms, antonyms], nb_epoch=1, batch_size=batch_size,
-                             validation_split=validation_split, verbose=1)
+            hist = self.model.fit([words_vec, synonyms_vec, antonyms_vec], nb_epoch=1,
+                            batch_size=batch_size,
+                            validation_split=validation_split, verbose=1)
 
             if hist.history['val_loss'][0] < val_loss['loss']:
                 val_loss = {'loss': hist.history['val_loss'][0], 'epoch': i}
@@ -183,57 +199,94 @@ class Evaluator:
             self._eval_sets = dict([(s, self.load(s)) for s in ['dev', 'test1', 'test2']])
         return self._eval_sets
 
-    def get_score(self, verbose=False):
-        top1_ls = []
-        mrr_ls = []
-        for name, data in self.eval_sets().items():
-            print('----- %s -----' % name)
+    def get_score(self, score_epoch, verbose=False):
+        # It is not clear exactly how I should evaluate the model.
+        # I could check that the similarity between the two words is smaller
+        # than a certain value, or that the word is among the top-K most similar
+        # elements to the other one. Both of these have assumption that are
+        # hard to defend.
+        words_vec, synonyms_vec, antonyms_vec, words, synonyms, antonyms = \
+                                        self.load_dataset(which_dataset='test')
+        assert len(words) == len(synonyms) == len(antonyms)
 
-            random.shuffle(data)
+        results = []
+        for i in range(len(words_vec)):
+            # 1) Calculate similarity between word and synonym
+            curr_word = words_vec[i]
+            curr_synonym = synonyms_vec[i]
+            sim = self.model.predict([curr_word, curr_synonym])
 
-            if 'n_eval' in self.params:
-                data = data[:self.params['n_eval']]
+            # I can also create a histogram for all words to see how the
+            # similarity between the two words is really better than the others
+			# But this will be the same as taking the top-K anyways
+            all_similarities = []
+            all_words_and_similarities = []
+            for j in range(len(words_vec)):
+                if i == j:
+                    continue
 
-            c_1, c_2 = 0, 0
+                prediction = self.model.predict([words_vec[i], words_vec[j]])
+                position = bisect.bisect(all_similarities, prediction)
+                all_words_and_similarities.insert(position,
+                                        (words[i], words[j], prediction))
+                all_similarities.insert(position, prediction)
 
-            for i, d in enumerate(data):
-                self.prog_bar(i, len(data))
+            top50 = all_words_and_similarities[0:50]
+            results.append((curr_word, curr_synonym, sim, top50))
 
-                indices = d['good'] + d['bad']
-                answers = self.pada([self.answers[i] for i in indices])
-                question = self.padq([d['question']] * len(indices))
+        self.save_test_results(score_epoch, results)
+        return results
 
-                sims = self.model.predict([question, answers])
-
-                n_good = len(d['good'])
-                max_r = np.argmax(sims)
-                max_n = np.argmax(sims[:n_good])
-
-                r = rankdata(sims, method='max')
-
-                if verbose:
-                    min_r = np.argmin(sims)
-                    amin_r = self.answers[indices[min_r]]
-                    amax_r = self.answers[indices[max_r]]
-                    amax_n = self.answers[indices[max_n]]
-
-                    print(' '.join(self.revert(d['question'])))
-                    print('Predicted: ({}) '.format(sims[max_r]) + ' '.join(self.revert(amax_r)))
-                    print('Expected: ({}) Rank = {} '.format(sims[max_n], r[max_n]) + ' '.join(self.revert(amax_n)))
-                    print('Worst: ({})'.format(sims[min_r]) + ' '.join(self.revert(amin_r)))
-
-                c_1 += 1 if max_r == max_n else 0
-                c_2 += 1 / float(r[max_r] - r[max_n] + 1)
-
-            top1 = c_1 / float(len(data))
-            mrr = c_2 / float(len(data))
-
-            del data
-            print('Top-1 Precision: %f' % top1)
-            print('MRR: %f' % mrr)
-            top1_ls.append(top1)
-            mrr_ls.append(mrr)
-        return top1_ls, mrr_ls
+        # top1_ls = []
+        # mrr_ls = []
+        # for name, data in self.eval_sets().items():
+        #     print('----- %s -----' % name)
+        #
+        #     random.shuffle(data)
+        #
+        #     if 'n_eval' in self.params:
+        #         data = data[:self.params['n_eval']]
+        #
+        #     c_1, c_2 = 0, 0
+        #
+        #     for i, d in enumerate(data):
+        #         self.prog_bar(i, len(data))
+        #
+        #         indices = d['good'] + d['bad']
+        #         answers = self.pada([self.answers[i] for i in indices])
+        #         question = self.padq([d['question']] * len(indices))
+        #
+        #         sims = self.model.predict([question, answers])
+        #
+        #         n_good = len(d['good'])
+        #         max_r = np.argmax(sims)
+        #         max_n = np.argmax(sims[:n_good])
+        #
+        #         r = rankdata(sims, method='max')
+        #
+        #         if verbose:
+        #             min_r = np.argmin(sims)
+        #             amin_r = self.answers[indices[min_r]]
+        #             amax_r = self.answers[indices[max_r]]
+        #             amax_n = self.answers[indices[max_n]]
+        #
+        #             print(' '.join(self.revert(d['question'])))
+        #             print('Predicted: ({}) '.format(sims[max_r]) + ' '.join(self.revert(amax_r)))
+        #             print('Expected: ({}) Rank = {} '.format(sims[max_n], r[max_n]) + ' '.join(self.revert(amax_n)))
+        #             print('Worst: ({})'.format(sims[min_r]) + ' '.join(self.revert(amin_r)))
+        #
+        #         c_1 += 1 if max_r == max_n else 0
+        #         c_2 += 1 / float(r[max_r] - r[max_n] + 1)
+        #
+        #     top1 = c_1 / float(len(data))
+        #     mrr = c_2 / float(len(data))
+        #
+        #     del data
+        #     print('Top-1 Precision: %f' % top1)
+        #     print('MRR: %f' % mrr)
+        #     top1_ls.append(top1)
+        #     mrr_ls.append(mrr)
+        #return top1_ls, mrr_ls
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -285,7 +338,7 @@ if __name__ == '__main__':
         'training': {
             'batch_size': 100,
             #'nb_epoch': 2000,
-            'nb_epoch': 100,
+            'nb_epoch': 10,
             'validation_split': 0.1,
         },
 
@@ -307,13 +360,14 @@ if __name__ == '__main__':
 
     # evaluate mrr for a particular epoch
     evaluator.load_epoch(best_loss['epoch'])
-    top1, mrr = evaluator.get_score(verbose=False)
-    log(' - Top-1 Precision:')
-    log('   - %.3f on test 1' % top1[0])
-    log('   - %.3f on test 2' % top1[1])
-    log('   - %.3f on dev' % top1[2])
-    log(' - MRR:')
-    log('   - %.3f on test 1' % mrr[0])
-    log('   - %.3f on test 2' % mrr[1])
-    log('   - %.3f on dev' % mrr[2])
+    top1, mrr = evaluator.get_score(best_loss['epoch'], verbose=False)
+    log("best_loss['epoch']: {}".format(best_loss['epoch']))
+    #log(' - Top-1 Precision:')
+    #log('   - %.3f on test 1' % top1[0])
+    #log('   - %.3f on test 2' % top1[1])
+    #log('   - %.3f on dev' % top1[2])
+    #log(' - MRR:')
+    #log('   - %.3f on test 1' % mrr[0])
+    #log('   - %.3f on test 2' % mrr[1])
+    #log('   - %.3f on dev' % mrr[2])
 
