@@ -99,9 +99,9 @@ class Evaluator:
             synonyms_vec = synonyms_vec[:, np.newaxis, :]
             antonyms_vec = antonyms_vec[:, np.newaxis, :]
 
-        words    = np.array([self.nlp.vocab[i[0]].vector for i in triples])
-        synonyms = np.array([self.nlp.vocab[i[1]].vector for i in triples])
-        antonyms = np.array([self.nlp.vocab[i[2]].vector for i in triples])
+        words    = np.array([i[0] for i in triples])
+        synonyms = np.array([i[1] for i in triples])
+        antonyms = np.array([i[2] for i in triples])
 
         return words_vec, synonyms_vec, antonyms_vec, words, synonyms, antonyms
 
@@ -217,8 +217,8 @@ class Evaluator:
         results = []
         for i in range(len(words_vec)):
             # 1) Calculate similarity between word and synonym
-            curr_word = np.expand_dims(words_vec[i], axis=0)
-            curr_synonym = np.expand_dims(synonyms_vec[i], axis=0)
+            curr_word = words_vec[i]
+            curr_synonym = synonyms_vec[i]
             sim = self.model.predict([curr_word, curr_synonym])
 
             # I can also create a histogram for all words to see how the
