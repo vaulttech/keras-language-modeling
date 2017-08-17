@@ -212,8 +212,8 @@ class Evaluator:
         results = []
         for i in range(len(words_vec)):
             # 1) Calculate similarity between word and synonym
-            curr_word = words_vec[i]
-            curr_synonym = synonyms_vec[i]
+            curr_word = np.expand_dims(words_vec[i], axis=0)
+            curr_synonym = np.expand_dims(synonyms_vec[i], axis=0)
             sim = self.model.predict([curr_word, curr_synonym])
 
             # I can also create a histogram for all words to see how the
