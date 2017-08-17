@@ -219,25 +219,28 @@ class Evaluator:
             # 1) Calculate similarity between word and synonym
             curr_word = words_vec[i]
             curr_synonym = synonyms_vec[i]
-            sim = self.model.predict([curr_word, curr_synonym])
+            curr_antonym = antonyms_vec[i]
+            sim_right = self.model.predict([curr_word, curr_synonym])
+            sim_wrong = self.model.predict([curr_word, antonyms_vec])
+            results.append((words[i], synonyms[i], antonyms[i], sim_right, sim_wrong))
 
             # I can also create a histogram for all words to see how the
             # similarity between the two words is really better than the others
 			# But this will be the same as taking the top-K anyways
-            all_similarities = []
-            all_words_and_similarities = []
-            for j in range(len(words_vec)):
-                if i == j:
-                    continue
-
-                prediction = self.model.predict([words_vec[i], words_vec[j]])
-                position = bisect.bisect(all_similarities, prediction)
-                all_words_and_similarities.insert(position,
-                                        (words[i], words[j], prediction))
-                all_similarities.insert(position, prediction)
-
-            top50 = all_words_and_similarities[0:50]
-            results.append((curr_word, curr_synonym, sim, top50))
+            # all_similarities = []
+            # all_words_and_similarities = []
+            # for j in range(len(words_vec)):
+            #     if i == j:
+            #         continue
+            #
+            #     prediction = self.model.predict([words_vec[i], words_vec[j]])
+            #     position = bisect.bisect(all_similarities, prediction)
+            #     all_words_and_similarities.insert(position,
+            #                            (words[i], words[j], prediction))
+            #     all_similarities.insert(position, prediction)
+            #
+            # top50 = all_words_and_similarities[0:50]
+            #results.append((words[i], synonyms[i], sim, top50))
 
         self.save_test_results(score_epoch, results)
         return results
@@ -348,7 +351,7 @@ if __name__ == '__main__':
         },
 
         'similarity': {
-            'mode': 'gesd',
+            'mode': 'euclidean',
             'gamma': 1,
             'c': 1,
             'd': 2,
