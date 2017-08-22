@@ -1,5 +1,6 @@
 # Dataset wordnet_random_antonyms
 # 1 layer
+set -x
 
 python insurance_qa_eval.py --model_name=MLPModel_100 --dataset_name=wordnet_random_antonyms
 python insurance_qa_eval.py --model_name=MLPModel_200 --dataset_name=wordnet_random_antonyms
