@@ -180,11 +180,11 @@ def get_antonyms(remove_duplicates=False):
 #
 #    return embeddings
 
-def generate_dataset(force_antonyms=False, remove_duplicates=False):
+def generate_dataset(force_antonyms=False, remove_duplicates=True):
     nlp = spacy.load('en')
 
     triples = get_triples(nlp, force_antonyms, remove_duplicates)
-    train, test = triples[:-500], triples[-500:]
+    train, test = triples[:-30485], triples[-30485:]
 
     pickle.dump(train, open('word_synonym_antonym.train', 'wb'))
     pickle.dump(test,  open('word_synonym_antonym.test',  'wb'))
@@ -198,5 +198,5 @@ def generate_dataset(force_antonyms=False, remove_duplicates=False):
     #pickle.dump(all_words, open('word2vec_wordnet.vocabulary', 'wb'))
 
 if __name__ == '__main__':
-    generate_dataset(force_antonyms=True)
+    generate_dataset()
 

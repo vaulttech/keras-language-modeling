@@ -134,7 +134,6 @@ class Evaluator:
     def get_time(self):
         return strftime('%Y-%m-%d %H:%M:%S', gmtime())
 
-    @property
     def train(self):
         batch_size = self.params['batch_size']
         nb_epoch = self.params['nb_epoch']
@@ -165,6 +164,8 @@ class Evaluator:
 
         # def get_bad_samples(indices, top_50):
         #     return [self.answers[random.choice(top_50[i])] for i in indices]
+        good = nlp.vocab['good'][np.newaxis, :]
+        bad = nlp.vocab['bad'][np.newaxis, :]
 
         for i in range(1, nb_epoch+1):
             # sample from all answers to get bad answers
@@ -184,6 +185,8 @@ class Evaluator:
             log('%s -- Epoch %d ' % (self.get_time(), i) +
                 'Loss = %.4f, Validation Loss = %.4f ' % (hist.history['loss'][0], hist.history['val_loss'][0]) +
                 '(Best: Loss = %.4f, Epoch = %d)' % (val_loss['loss'], val_loss['epoch']))
+            log("Similarity between {} and {} is {}".format('good', 'bad',
+                self.model.predict([good, bad])))
 
             self.save_epoch(i)
 
@@ -364,7 +367,7 @@ if __name__ == '__main__':
     evaluator = Evaluator(conf, model=model, optimizer='adam')
 
     # train the model
-    best_loss = evaluator.train
+    best_loss = evaluator.train()
 
     # evaluate mrr for a particular epoch
     evaluator.load_epoch(best_loss['epoch'])

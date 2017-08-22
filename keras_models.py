@@ -122,7 +122,10 @@ class LanguageModel:
         self.prediction_model = Model(input=[self.question, self.answer_good], output=good_similarity, name='prediction_model')
         self.prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer=optimizer, **kwargs)
 
-        self.training_model = Model(input=[self.question, self.answer_good, self.answer_bad], output=loss, name='training_model')
+        self.training_model = Model(
+                input=[self.question],
+                output=loss,
+                name='training_model')
         self.training_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer=optimizer, **kwargs)
 
     def fit(self, x, **kwargs):
@@ -149,11 +152,7 @@ class MLPModel(LanguageModel):
 
         # add embedding layers
         #weights = np.load(self.config['initial_embed_weights'])
-        fclayer = Dense(units=size,
-                            #activation='relu',
-                            # dropout=0.2,
-                            #weights=[weights]
-                          )
+        fclayer = Dense(units=size)
 
         question_embedding = fclayer(question)
         answer_embedding = fclayer(answer)
