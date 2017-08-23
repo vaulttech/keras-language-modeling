@@ -123,7 +123,7 @@ class LanguageModel:
         self.prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer=optimizer, **kwargs)
 
         self.training_model = Model(
-                input=[self.question],
+                input=[self.question, self.answer_good, self.answer_bad],
                 output=loss,
                 name='training_model')
         self.training_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer=optimizer, **kwargs)
