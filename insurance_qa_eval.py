@@ -71,7 +71,7 @@ class Evaluator:
             os.makedirs(dump_path)
         file_name = os.path.join(dump_path, 'test_results.pickle')
         test_results = [score_epoch, results]
-        pickle.dump(test_results, file_name, overwrite=True)
+        pickle.dump(test_results, open(file_name, 'wb'))
 
     def save_epoch(self, epoch):
         model_path = os.path.join('models', self.conf['dataset_name'], self.conf['model_name'])
@@ -164,8 +164,8 @@ class Evaluator:
 
         # def get_bad_samples(indices, top_50):
         #     return [self.answers[random.choice(top_50[i])] for i in indices]
-        good = nlp.vocab['good'][np.newaxis, :]
-        bad = nlp.vocab['bad'][np.newaxis, :]
+        good = self.nlp.vocab['good'].vector[np.newaxis, :]
+        bad = self.nlp.vocab['bad'].vector[np.newaxis, :]
 
         for i in range(1, nb_epoch+1):
             # sample from all answers to get bad answers
@@ -185,8 +185,7 @@ class Evaluator:
             log('%s -- Epoch %d ' % (self.get_time(), i) +
                 'Loss = %.4f, Validation Loss = %.4f ' % (hist.history['loss'][0], hist.history['val_loss'][0]) +
                 '(Best: Loss = %.4f, Epoch = %d)' % (val_loss['loss'], val_loss['epoch']))
-            log("Similarity between {} and {} is {}".format('good', 'bad',
-                self.model.predict([good, bad])))
+            log("Meta-predict: {}".format(self.model.meta_predict([good, bad])))
 
             self.save_epoch(i)
 
@@ -348,13 +347,13 @@ if __name__ == '__main__':
 
         'training': {
             'batch_size': 100,
-            #'nb_epoch': 2000,
-            'nb_epoch': 10,
+            'nb_epoch': 2000,
+            #'nb_epoch': 10,
             'validation_split': 0.1,
         },
 
         'similarity': {
-            'mode': 'euclidean',
+            'mode': 'gesd',
             'gamma': 1,
             'c': 1,
             'd': 2,
@@ -371,7 +370,7 @@ if __name__ == '__main__':
 
     # evaluate mrr for a particular epoch
     evaluator.load_epoch(best_loss['epoch'])
-    top1, mrr = evaluator.get_score(best_loss['epoch'], verbose=False)
+    evaluator.get_score(best_loss['epoch'], verbose=False)
     log("best_loss['epoch']: {}".format(best_loss['epoch']))
     #log(' - Top-1 Precision:')
     #log('   - %.3f on test 1' % top1[0])

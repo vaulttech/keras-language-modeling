@@ -6,6 +6,7 @@ from keras.engine import Input
 from keras.layers import merge, Embedding, Dropout, Convolution1D, Lambda, LSTM, Dense
 from keras import backend as K
 from keras.models import Model
+from keras.layers.advanced_activations import LeakyReLU
 
 import numpy as np
 
@@ -106,6 +107,8 @@ class LanguageModel:
             qa_model = merge([dropout(question_output), dropout(answer_output)],
                              mode=similarity, output_shape=lambda _: (None, 1))
             self._qa_model = Model(input=[self.question, self.get_answer()], output=qa_model, name='qa_model')
+            self.meta_model = Model(input=[self.question, self.get_answer()],
+                    output=[qa_model, question_output, answer_output], name='meta_model')
 
         return self._qa_model
 
@@ -122,6 +125,8 @@ class LanguageModel:
         self.prediction_model = Model(input=[self.question, self.answer_good], output=good_similarity, name='prediction_model')
         self.prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer=optimizer, **kwargs)
 
+        self.meta_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer=optimizer, **kwargs)
+
         self.training_model = Model(
                 input=[self.question, self.answer_good, self.answer_bad],
                 output=loss,
@@ -132,6 +137,10 @@ class LanguageModel:
         assert self.training_model is not None, 'Must compile the model before fitting data'
         y = np.zeros(shape=(x[0].shape[0],)) # doesn't get used
         return self.training_model.fit(x, y, **kwargs)
+
+    def meta_predict(self, x):
+        assert self.meta_model is not None and isinstance(self.meta_model, Model)
+        return self.meta_model.predict_on_batch(x)
 
     def predict(self, x):
         assert self.prediction_model is not None and isinstance(self.prediction_model, Model)
@@ -152,10 +161,11 @@ class MLPModel(LanguageModel):
 
         # add embedding layers
         #weights = np.load(self.config['initial_embed_weights'])
-        fclayer = Dense(units=size)
+        fclayer = Dense(size, activation='linear')
+        leaky_relu = LeakyReLU(alpha=0.3)
 
-        question_embedding = fclayer(question)
-        answer_embedding = fclayer(answer)
+        question_embedding = leaky_relu(fclayer(question))
+        answer_embedding = leaky_relu(fclayer(answer))
 
         # maxpooling
         #maxpool = Lambda(lambda x: K.max(x, axis=1, keepdims=False), output_shape=lambda x: (x[0], x[2]))
@@ -184,6 +194,47 @@ class MLPModel_400(MLPModel):
 class MLPModel_500(MLPModel):
     def build(self):
         return self.build_with_size(500)
+
+class DoubleMLPModel(LanguageModel):
+    def build_with_size(self, size):
+        question = self.question
+        answer = self.get_answer()
+
+        # add embedding layers
+        fclayer = Dense(size, activation='linear')
+        leaky_relu = LeakyReLU(alpha=0.3)
+
+        q = leaky_relu(fclayer(question))
+        a = leaky_relu(fclayer(answer))
+
+        fclayer2 = Dense(size, activation='linear')
+        leaky_relu2 = LeakyReLU(alpha=0.3)
+
+        question_embedding = leaky_relu2(fclayer2(q))
+        answer_embedding = leaky_relu2(fclayer2(a))
+
+        return question_embedding, answer_embedding
+
+class DoubleMLPModel_100(DoubleMLPModel):
+    def build(self):
+        return self.build_with_size(100)
+
+class DoubleMLPModel_200(DoubleMLPModel):
+    def build(self):
+        return self.build_with_size(200)
+
+class DoubleMLPModel_300(DoubleMLPModel):
+    def build(self):
+        return self.build_with_size(300)
+
+class DoubleMLPModel_400(DoubleMLPModel):
+    def build(self):
+        return self.build_with_size(400)
+
+class DoubleMLPModel_500(DoubleMLPModel):
+    def build(self):
+        return self.build_with_size(500)
+
 
 
 class EmbeddingModel(LanguageModel):
