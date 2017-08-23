@@ -347,8 +347,8 @@ if __name__ == '__main__':
 
         'training': {
             'batch_size': 100,
-            #'nb_epoch': 2000,
-            'nb_epoch': 10,
+            'nb_epoch': 2000,
+            #'nb_epoch': 10,
             'validation_split': 0.1,
         },
 
