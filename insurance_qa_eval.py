@@ -305,6 +305,14 @@ def parse_args():
     parser.add_argument('--dataset_name', default="wordnet_true_antonyms",
                         type=str,
                         help='The name of the dataset to be used.')
+    parser.add_argument('--weight_decay', default=False,
+                        type=bool, action='store_true',
+                        help='Use weight decay? (for now, always L2 loss)')
+    parser.add_argument('--use_leaky_relu', default=False,
+                        type=bool, action='store_true',
+                        help='If false, no non-linearity activations is used.')
+    parser.add_argument('--loss_type', default="none", type=str,
+                        help='The name of the model to be trained.')
     return parser.parse_args()
 
 
@@ -334,8 +342,11 @@ if __name__ == '__main__':
     conf = {
         'dataset_name': args.dataset_name,
         'model_name' : args.model_name,
+        'weight_decay' : True,
+        'use_leaky_relu' : True,
+        'loss_type' : 'none',
         #'n_words': 22353,
-	#'n_word': 7795,
+        #'n_word': 7795,
 
         # I'm corrupting these variables to mean the size of the word vector
         'question_len': 300,

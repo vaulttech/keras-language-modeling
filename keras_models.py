@@ -118,9 +118,18 @@ class LanguageModel:
         good_similarity = qa_model([self.question, self.answer_good])
         bad_similarity = qa_model([self.question, self.answer_bad])
 
-        loss = merge([good_similarity, bad_similarity],
+        margin_loss = merge([good_similarity, bad_similarity],
                      mode=lambda x: K.relu(self.config['margin'] - x[0] + x[1]),
                      output_shape=lambda x: x[0])
+        if (config['loss_type'] == 'all'):
+            pass
+        elif (config['loss_type'] == 'reconstruction'):
+            pass
+        #elif (config['loss_type'] == 'weight_decay'):
+        #    margin_loss = margin_loss
+        # else: #(config['loss_type'] == 'margin_loss'):
+        #     pass
+
 
         self.prediction_model = Model(input=[self.question, self.answer_good], output=good_similarity, name='prediction_model')
         self.prediction_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer=optimizer, **kwargs)
@@ -129,7 +138,7 @@ class LanguageModel:
 
         self.training_model = Model(
                 input=[self.question, self.answer_good, self.answer_bad],
-                output=loss,
+                output=margin_loss,
                 name='training_model')
         self.training_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer=optimizer, **kwargs)
 
@@ -160,12 +169,19 @@ class MLPModel(LanguageModel):
         answer = self.get_answer()
 
         # add embedding layers
-        #weights = np.load(self.config['initial_embed_weights'])
-        fclayer = Dense(size, activation='linear')
-        leaky_relu = LeakyReLU(alpha=0.3)
+        if (self.config['weight_decay']):
+            fclayer = Dense(size, activation='linear',
+                            kernel_regularizer=regularizers.l2(0.01))
+        else:
+            fclayer = Dense(size, activation='linear')
 
-        question_embedding = leaky_relu(fclayer(question))
-        answer_embedding = leaky_relu(fclayer(answer))
+        if (self.config['use_leaky_relu']):
+            leaky_relu = LeakyReLU(alpha=0.3)
+            question_embedding = leaky_relu(fclayer(question))
+            answer_embedding = leaky_relu(fclayer(answer))
+        else:
+            question_embedding = fclayer(question)
+            answer_embedding = fclayer(answer)
 
         # maxpooling
         #maxpool = Lambda(lambda x: K.max(x, axis=1, keepdims=False), output_shape=lambda x: (x[0], x[2]))
@@ -200,18 +216,33 @@ class DoubleMLPModel(LanguageModel):
         question = self.question
         answer = self.get_answer()
 
-        # add embedding layers
-        fclayer = Dense(size, activation='linear')
-        leaky_relu = LeakyReLU(alpha=0.3)
+        if (self.config['weight_decay']):
+            fclayer = Dense(size, activation='linear',
+                            kernel_regularizer=regularizers.l2(0.01))
+        else:
+            fclayer = Dense(size, activation='linear')
 
-        q = leaky_relu(fclayer(question))
-        a = leaky_relu(fclayer(answer))
+        if (self.config['use_leaky_relu']):
+            leaky_relu = LeakyReLU(alpha=0.3)
+            q = leaky_relu(fclayer(question))
+            a = leaky_relu(fclayer(answer))
+        else:
+            q = fclayer(question)
+            a = fclayer(answer)
 
-        fclayer2 = Dense(size, activation='linear')
-        leaky_relu2 = LeakyReLU(alpha=0.3)
+        if (self.config['weight_decay']):
+            fclayer2 = Dense(size, activation='linear',
+                            kernel_regularizer=regularizers.l2(0.01))
+        else:
+            fclayer2 = Dense(size, activation='linear')
 
-        question_embedding = leaky_relu2(fclayer2(q))
-        answer_embedding = leaky_relu2(fclayer2(a))
+        if (self.config['use_leaky_relu']):
+            leaky_relu2 = LeakyReLU(alpha=0.3)
+            question_embedding = leaky_relu2(fclayer2(q))
+            answer_embedding = leaky_relu2(fclayer2(a))
+        else:
+            question_embedding = fclayer2(q)
+            answer_embedding = fclayer2(a)
 
         return question_embedding, answer_embedding
 
