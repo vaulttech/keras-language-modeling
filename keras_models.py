@@ -8,6 +8,7 @@ from keras import backend as K
 from keras.models import Model
 from keras.layers.advanced_activations import LeakyReLU
 from keras import regularizers, initializers
+from keras import losses
 
 
 import numpy as np
@@ -44,7 +45,7 @@ class LanguageModel:
     def build(self):
         return
 
-    def get_similarity(self):
+    def get_similarity(self, similarity=None):
         ''' Specify similarity in configuration under 'similarity' -> 'mode'
         If a parameter is needed for the model, specify it in 'similarity'
 
@@ -70,7 +71,8 @@ class LanguageModel:
         '''
 
         params = self.params
-        similarity = params['mode']
+        if similarity is None:
+            similarity = params['mode']
 
         dot = lambda a, b: K.batch_dot(a, b, axes=1)
         l2_norm = lambda a, b: K.sqrt(K.sum(K.square(a - b), axis=1, keepdims=True))
@@ -106,8 +108,38 @@ class LanguageModel:
             question_output, answer_output = self._models
             dropout = Dropout(self.params.get('dropout', 0.2))
             similarity = self.get_similarity()
-            qa_model = merge([dropout(question_output), dropout(answer_output)],
-                             mode=similarity, output_shape=lambda _: (None, 1))
+            if (self.config['loss_type'] == 'all'):
+                qa_model =  merge([dropout(question_output), dropout(answer_output)],
+                            mode=similarity,
+                            output_shape=lambda _: (None, 1))
+            else: # elif (self.config['loss_type'] == 'none'):
+                cosine = merge([dropout(question_output), dropout(answer_output)],
+                            mode=self.get_similarity('cosine'),
+                            output_shape=lambda _: (None, 1))
+                polynomial = merge([dropout(question_output), dropout(answer_output)],
+                            mode=self.get_similarity('polynomial'),
+                            output_shape=lambda _: (None, 1))
+                sigmoid = merge([dropout(question_output), dropout(answer_output)],
+                            mode=self.get_similarity('sigmoid'),
+                            output_shape=lambda _: (None, 1))
+                rbf = merge([dropout(question_output), dropout(answer_output)],
+                                mode=self.get_similarity('rbf'),
+                                output_shape=lambda _: (None, 1))
+                euclidean = merge([dropout(question_output), dropout(answer_output)],
+                                mode=self.get_similarity('euclidean'),
+                                output_shape=lambda _: (None, 1))
+                exponential = merge([dropout(question_output), dropout(answer_output)],
+                                mode=self.get_similarity('exponential'),
+                                output_shape=lambda _: (None, 1))
+                gesd = merge([dropout(question_output), dropout(answer_output)],
+                                mode=self.get_similarity('gesd'),
+                                output_shape=lambda _: (None, 1))
+                aesd = merge([dropout(question_output), dropout(answer_output)],
+                                mode=self.get_similarity('aesd'),
+                                output_shape=lambda _: (None, 1))
+                qa_model = K.concatenate([cosine, polynomial, sigmoid, rbf,
+                                          euclidean, exponential, gesd, aesd])
+
             self._qa_model = Model(input=[self.question, self.get_answer()], output=qa_model, name='qa_model')
             self.meta_model = Model(input=[self.question, self.get_answer()],
                     output=[qa_model, question_output, answer_output], name='meta_model')
@@ -120,16 +152,19 @@ class LanguageModel:
         good_similarity = qa_model([self.question, self.answer_good])
         bad_similarity = qa_model([self.question, self.answer_bad])
 
-        margin_loss = merge([good_similarity, bad_similarity],
+        loss = merge([good_similarity, bad_similarity],
                      mode=lambda x: K.relu(self.config['margin'] - x[0] + x[1]),
                      output_shape=lambda x: x[0])
+
         if (self.config['loss_type'] == 'all'):
-            pass
+            final_similarity = Dense(1, activation='sigmoid')
+            final_good_similarity = final_similarity(good_similarity)
+            final_bad_similarity = final_similarity(bad_similarity)
+            loss = losses.mean_squared_error(final_good_similarity, 1) + \
+                    losses.mean_squared_error(final_bad_similarity, 0)
         elif (self.config['loss_type'] == 'reconstruction'):
             pass
-        #elif (self.config['loss_type'] == 'weight_decay'):
-        #    margin_loss = margin_loss
-        # else: #(self.config['loss_type'] == 'margin_loss'):
+        # else: #(self.config['loss_type'] == 'loss'):
         #     pass
 
 
@@ -140,7 +175,7 @@ class LanguageModel:
 
         self.training_model = Model(
                 input=[self.question, self.answer_good, self.answer_bad],
-                output=margin_loss,
+                output=loss,
                 name='training_model')
         self.training_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer=optimizer, **kwargs)
 
