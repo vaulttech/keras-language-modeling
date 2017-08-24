@@ -166,6 +166,7 @@ class Evaluator:
         #     return [self.answers[random.choice(top_50[i])] for i in indices]
         good = self.nlp.vocab['good'].vector[np.newaxis, :]
         bad = self.nlp.vocab['bad'].vector[np.newaxis, :]
+        # self.model.meta_predict([self.nlp.vocab['good'].vector[np.newaxis,:], self.nlp.vocab['great'].vector[np.newaxis, :]])
 
         for i in range(1, nb_epoch+1):
             # sample from all answers to get bad answers
