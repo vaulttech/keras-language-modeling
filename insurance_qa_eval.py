@@ -186,7 +186,7 @@ class Evaluator:
             log('%s -- Epoch %d ' % (self.get_time(), i) +
                 'Loss = %.4f, Validation Loss = %.4f ' % (hist.history['loss'][0], hist.history['val_loss'][0]) +
                 '(Best: Loss = %.4f, Epoch = %d)' % (val_loss['loss'], val_loss['epoch']))
-            log("Meta-predict: {}".format(self.model.meta_predict([good, bad])))
+            #log("Meta-predict: {}".format(self.model.meta_predict([good, bad])))
 
             self.save_epoch(i)
 
@@ -307,10 +307,10 @@ def parse_args():
                         type=str,
                         help='The name of the dataset to be used.')
     parser.add_argument('--weight_decay', default=False,
-                        type=bool, action='store_true',
+                        action='store_true',
                         help='Use weight decay? (for now, always L2 loss)')
     parser.add_argument('--use_leaky_relu', default=False,
-                        type=bool, action='store_true',
+                        action='store_true',
                         help='If false, no non-linearity activations is used.')
 
     # TODO: explain the possible loss types
@@ -368,7 +368,7 @@ if __name__ == '__main__':
         },
 
         'similarity': {
-            'mode': 'gesd',
+            'mode': 'euclidean',
             'gamma': 1,
             'c': 1,
             'd': 2,

@@ -7,6 +7,8 @@ from keras.layers import merge, Embedding, Dropout, Convolution1D, Lambda, LSTM,
 from keras import backend as K
 from keras.models import Model
 from keras.layers.advanced_activations import LeakyReLU
+from keras import regularizers, initializers
+
 
 import numpy as np
 
@@ -121,13 +123,13 @@ class LanguageModel:
         margin_loss = merge([good_similarity, bad_similarity],
                      mode=lambda x: K.relu(self.config['margin'] - x[0] + x[1]),
                      output_shape=lambda x: x[0])
-        if (config['loss_type'] == 'all'):
+        if (self.config['loss_type'] == 'all'):
             pass
-        elif (config['loss_type'] == 'reconstruction'):
+        elif (self.config['loss_type'] == 'reconstruction'):
             pass
-        #elif (config['loss_type'] == 'weight_decay'):
+        #elif (self.config['loss_type'] == 'weight_decay'):
         #    margin_loss = margin_loss
-        # else: #(config['loss_type'] == 'margin_loss'):
+        # else: #(self.config['loss_type'] == 'margin_loss'):
         #     pass
 
 
@@ -171,7 +173,7 @@ class MLPModel(LanguageModel):
         # add embedding layers
         if (self.config['weight_decay']):
             fclayer = Dense(size, activation='linear',
-                            kernel_regularizer=regularizers.l2(0.01))
+                    kernel_regularizer=regularizers.l2(0.1))
         else:
             fclayer = Dense(size, activation='linear')
 
