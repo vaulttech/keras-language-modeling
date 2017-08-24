@@ -311,8 +311,11 @@ def parse_args():
     parser.add_argument('--use_leaky_relu', default=False,
                         type=bool, action='store_true',
                         help='If false, no non-linearity activations is used.')
+
+    # TODO: explain the possible loss types
     parser.add_argument('--loss_type', default="none", type=str,
-                        help='The name of the model to be trained.')
+                        help='The type of loss to be used. Possible types ' +
+                            'are "none", "reconstruction" and "all".')
     return parser.parse_args()
 
 
@@ -342,9 +345,9 @@ if __name__ == '__main__':
     conf = {
         'dataset_name': args.dataset_name,
         'model_name' : args.model_name,
-        'weight_decay' : True,
-        'use_leaky_relu' : True,
-        'loss_type' : 'none',
+        'weight_decay' : args.weight_decay,
+        'use_leaky_relu' : args.use_leaky_relu,
+        'loss_type' : args.loss_type,
         #'n_words': 22353,
         #'n_word': 7795,
 
